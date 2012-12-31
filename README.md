@@ -1,4 +1,4 @@
 tic-tac-toe
 ===========
 
-Tic Tac Toe for Clojurescript
+Tic Tac Toe for ClojureScript
