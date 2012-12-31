@@ -79,7 +79,6 @@
 		  row-key (+ (str y) (str y))
 		  rows (cache-board $game-table)
 		  winner ()]
-		  ;this.rows[x+y].text(player).data('player', player);
 		  (.text (row-key rows) player)
 		  ))
 
