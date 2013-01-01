@@ -1,5 +1,5 @@
 (ns tic-tac-toe.core
-	(:use [jayq.core :only [$ css inner find data text current-target on delegate click]]
+	(:use [jayq.core :only [$ css inner find data text current-target on delegate click children]]
 	 	  [jayq.util :only [log clj->js]])
 	(:require[goog.events :as events]))
 
@@ -20,6 +20,15 @@
 (def finished false)
 (def winner false)
 (def active-player false)
+;(def rows {})
+(defn cache-board [table]
+	(let [rows {}]
+		(into rows 
+			(for [x (range 3) 
+			      y (range 3)] 
+			      [(+(str x)(str y)) (.find table (apply str (+ "[data-x=" x "][data-y=" y "]")))]))
+		)
+)
 
 ;; App 
 (defn set-history 
@@ -73,14 +82,14 @@
 (defn play [entering-player turns]
 	(let [turn-copy turns
 		  player (if (== entering-player "x") "o" "x")
-		  turn (.split (get turns 0) ",")
+		  turn (.split (last turns) ",")
 		  x (apply str (get turn 0))
 		  y (apply str (get turn 1))
 		  row-key (+ (str y) (str y))
 		  rows (cache-board $game-table)
 		  winner ()]
-		  (.text (row-key rows) player)
-		  ))
+		  (console-log (clj->js (row-key rows)))
+		  (.text ($ (row-key rows)) player)))
 
 (defn check-draw [turns])
 
@@ -134,6 +143,16 @@
 	(cache-board $game-table)
 	;;(.-addEventListener "popstate" (route))
 	(.click $button (fn [e] (select-turn e)))
-	(.click $td (fn [e] (take-turn e))))
+	(.click ($ (.find $game-table "td"))(fn [e] (take-turn e)))
+
+	;(.click $td (fn [e] (take-turn e)))
+	; this.$gameTable.on('click', 'td', this.takeTurn.bind(this));
+	;(on $game-table $td "click" 
+    ;      (fn [e]
+     ;       (.preventDefault e)
+      ;      (take-turn e)
+       ;     (console-log "clicked!")))
+
+	)
 
 (set! (.-onload js/window) init)
