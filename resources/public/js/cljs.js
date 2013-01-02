@@ -14950,43 +14950,12 @@ tic_tac_toe.core.$status_text = jayq.core.$.call(null, "\ufdd0'#StatusText");
 tic_tac_toe.core.$game_table = jayq.core.$.call(null, "\ufdd0'#GameTable");
 tic_tac_toe.core.$button = jayq.core.$.call(null, "\ufdd0'button");
 tic_tac_toe.core.$td = jayq.core.$.call(null, "\ufdd0'td");
+tic_tac_toe.core.$body = jayq.core.$.call(null, "\ufdd0'body");
 tic_tac_toe.core.turns = [];
 tic_tac_toe.core.finished = !1;
 tic_tac_toe.core.winner = !1;
+tic_tac_toe.core.draw = !1;
 tic_tac_toe.core.active_player = !1;
-tic_tac_toe.core.cache_board = function(a) {
-  return cljs.core.into.call(null, cljs.core.ObjMap.EMPTY, function() {
-    return function c(d) {
-      return new cljs.core.LazySeq(null, !1, function() {
-        for(var e = d;;) {
-          if(cljs.core.seq.call(null, e)) {
-            var f = cljs.core.first.call(null, e), f = function(c, d) {
-              return function j(e) {
-                return new cljs.core.LazySeq(null, false, function(c, d) {
-                  return function() {
-                    for(;;) {
-                      if(cljs.core.seq.call(null, e)) {
-                        var c = cljs.core.first.call(null, e);
-                        return cljs.core.cons.call(null, cljs.core.PersistentVector.fromArray(["" + cljs.core.str(d) + ("" + cljs.core.str(c)), a.find(cljs.core.apply.call(null, cljs.core.str, "[data-x=" + d + "][data-y=" + c + "]"))], true), j.call(null, cljs.core.rest.call(null, e)))
-                      }
-                      return null
-                    }
-                  }
-                }(c, d), null)
-              }
-            }(e, f);
-            if(f = cljs.core.seq.call(null, f.call(null, cljs.core.range.call(null, 3)))) {
-              return cljs.core.concat.call(null, f, c.call(null, cljs.core.rest.call(null, e)))
-            }
-            e = cljs.core.rest.call(null, e)
-          }else {
-            return null
-          }
-        }
-      }, null)
-    }.call(null, cljs.core.range.call(null, 3))
-  }())
-};
 tic_tac_toe.core.set_history = function(a) {
   return window.history.pushState(null, null, a)
 };
@@ -15029,38 +14998,49 @@ tic_tac_toe.core.cache_board = function(a) {
     }.call(null, cljs.core.range.call(null, 3))
   }())
 };
-tic_tac_toe.core.check_x = function() {
-  return null
+tic_tac_toe.core.check_x = function(a, b, c) {
+  var d = jayq.core.$.call(null, ("" + cljs.core.str(a) + "0").call(null, c)).data("player") === b;
+  return d ? (d = jayq.core.$.call(null, ("" + cljs.core.str(a) + "1").call(null, c)).data("player") === b) ? jayq.core.$.call(null, ("" + cljs.core.str(a) + "2").call(null, c)).data("player") === b : d : d
 };
-tic_tac_toe.core.check_y = function() {
-  return null
+tic_tac_toe.core.check_y = function(a, b, c) {
+  var d = jayq.core.$.call(null, ("0" + cljs.core.str(a)).call(null, c)).data("player") === b;
+  return d ? (d = jayq.core.$.call(null, ("1" + cljs.core.str(a)).call(null, c)).data("player") === b) ? jayq.core.$.call(null, ("2" + cljs.core.str(a)).call(null, c)).data("player") === b : d : d
 };
-tic_tac_toe.core.check_all_diags = function() {
-  return null
+tic_tac_toe.core.check_all_diags = function(a, b) {
+  var c;
+  if(c = jayq.core.$.call(null, "00".call(null, b)).data("player") === a) {
+    c = (c = jayq.core.$.call(null, "11".call(null, b)).data("player") === a) ? jayq.core.$.call(null, "22".call(null, b)).data("player") === a : c
+  }
+  return cljs.core.truth_(c) ? c : (c = jayq.core.$.call(null, "02".call(null, b)).data("player") === a) ? (c = jayq.core.$.call(null, "11".call(null, b)).data("player") === a) ? jayq.core.$.call(null, "20".call(null, b)).data("player") === a : c : c
 };
-tic_tac_toe.core.check_diags = function(a, b, c) {
-  cljs.core.PersistentVector.fromArray([a, b, c], !0);
-  cljs.core.rem.call(null, a + b, 2);
-  return tic_tac_toe.core.check_all_diags.call(null, c)
+tic_tac_toe.core.check_diags = function(a, b, c, d) {
+  cljs.core.not_EQ_.call(null, cljs.core.rem.call(null, a + b, 2), 1);
+  return tic_tac_toe.core.check_all_diags.call(null, c, d)
 };
-tic_tac_toe.core.set_game_over = function() {
-  return null
+tic_tac_toe.core.game_over = function(a, b, c, d) {
+  var e = tic_tac_toe.core.check_y.call(null, b, c, d);
+  if(cljs.core.truth_(e)) {
+    return e
+  }
+  e = tic_tac_toe.core.check_x.call(null, a, c, d);
+  return cljs.core.truth_(e) ? e : tic_tac_toe.core.check_diags.call(null, a, b, c, d)
 };
 tic_tac_toe.core.set_winner = function(a) {
   tic_tac_toe.core.winner = a;
   tic_tac_toe.core.finished = !0;
-  tic_tac_toe.core.$status_text.text(cljs.core.apply.call(null, cljs.core.str, a + "Won"));
+  tic_tac_toe.core.$status_text.text("" + cljs.core.str(a) + " Won");
   return tic_tac_toe.core.$game_table.css("background", "#FAFAFA")
 };
 tic_tac_toe.core.play = function(a, b) {
-  var c = "x" === a ? "o" : "x", d = cljs.core.last.call(null, b).split(",");
-  cljs.core.apply.call(null, cljs.core.str, cljs.core._lookup.call(null, d, 0, null));
-  var d = cljs.core.apply.call(null, cljs.core.str, cljs.core._lookup.call(null, d, 1, null)), d = "" + cljs.core.str(d) + ("" + cljs.core.str(d)), e = tic_tac_toe.core.cache_board.call(null, tic_tac_toe.core.$game_table);
-  tic_tac_toe.core.console_log.call(null, jayq.util.clj__GT_js.call(null, d.call(null, e)));
-  return jayq.core.$.call(null, d.call(null, e)).text(c)
+  var c = "x" === a ? "o" : "x", d = cljs.core.last.call(null, b).split(","), e = cljs.core.apply.call(null, cljs.core.str, cljs.core._lookup.call(null, d, 0, null)), d = cljs.core.apply.call(null, cljs.core.str, cljs.core._lookup.call(null, d, 1, null)), f = "" + cljs.core.str(e) + ("" + cljs.core.str(d)), g = tic_tac_toe.core.cache_board.call(null, tic_tac_toe.core.$game_table);
+  jayq.core.$.call(null, f.call(null, g)).text(c);
+  jayq.core.$.call(null, f.call(null, g)).data(jayq.util.clj__GT_js.call(null, cljs.core.ObjMap.fromObject(["\ufdd0'player"], {"\ufdd0'player":c})));
+  tic_tac_toe.core.console_log.call(null, jayq.core.$.call(null, f.call(null, g)).data("player"));
+  return cljs.core.truth_(tic_tac_toe.core.game_over.call(null, e, d, c, g)) ? tic_tac_toe.core.set_winner.call(null, c) : null
 };
-tic_tac_toe.core.check_draw = function() {
-  return null
+tic_tac_toe.core.check_draw = function(a) {
+  a = (a = 9 <= a.length) ? cljs.core._EQ_.call(null, !1, tic_tac_toe.core.winner) : a;
+  return a ? (tic_tac_toe.core.finished = !0, tic_tac_toe.core.draw = !0, tic_tac_toe.core.$status_text.text("Draw!"), tic_tac_toe.core.$game_table.css("background", "#FAFAFA")) : null
 };
 tic_tac_toe.core.set_turn = function(a) {
   tic_tac_toe.core.$status_text.text(cljs.core.apply.call(null, cljs.core.str, a + "'s Turn"));
@@ -15070,7 +15050,11 @@ tic_tac_toe.core.route = function() {
   var a = window.location.pathname.substring(5), b = a.slice(-1), a = a.slice(1, -2).split("-");
   cljs.core.empty_QMARK_.call(null, b) && tic_tac_toe.core.start_game.call(null);
   tic_tac_toe.core.set_turn.call(null, b);
-  return cljs.core.empty_QMARK_.call(null, a) ? null : tic_tac_toe.core.play.call(null, b, a)
+  if(cljs.core.empty_QMARK_.call(null, a)) {
+    return null
+  }
+  tic_tac_toe.core.play.call(null, b, a);
+  return tic_tac_toe.core.check_draw.call(null, a)
 };
 tic_tac_toe.core.construct_path = function() {
   return cljs.core.apply.call(null, cljs.core.str, "/game/" + tic_tac_toe.core.turns.join("-") + "/" + tic_tac_toe.core.active_player)
@@ -15085,9 +15069,17 @@ tic_tac_toe.core.select_turn = function(a) {
   return tic_tac_toe.core.set_history.call(null, b)
 };
 tic_tac_toe.core.take_turn = function(a) {
-  var b = jayq.core.$.call(null, tic_tac_toe.core.curr_target.call(null, a)), a = b.data("x"), b = b.data("y");
-  cljs.core._EQ_.call(null, tic_tac_toe.core.finished, !0) && alert("The game is over. Stop playing!");
-  tic_tac_toe.core.turns.push(a + "," + b);
+  var a = jayq.core.$.call(null, tic_tac_toe.core.curr_target.call(null, a)), b = a.data("x"), c = a.data("y");
+  cljs.core.str(c);
+  cljs.core.str(c);
+  tic_tac_toe.core.cache_board.call(null, tic_tac_toe.core.$game_table);
+  if(!0 === tic_tac_toe.core.finished) {
+    return alert("The game is over. Stop playing!")
+  }
+  if("&nbsp;" !== a.html()) {
+    return alert("Stop that. Someone else played there!")
+  }
+  tic_tac_toe.core.turns.push(b + "," + c);
   tic_tac_toe.core.change_turn.call(null);
   tic_tac_toe.core.set_history.call(null, tic_tac_toe.core.construct_path.call(null));
   return tic_tac_toe.core.route.call(null)
@@ -15095,6 +15087,7 @@ tic_tac_toe.core.take_turn = function(a) {
 tic_tac_toe.core.init = function() {
   tic_tac_toe.core.$turn_prompt.modal(jayq.util.clj__GT_js.call(null, cljs.core.ObjMap.fromObject(["\ufdd0'show"], {"\ufdd0'show":"\ufdd0'false"})));
   tic_tac_toe.core.cache_board.call(null, tic_tac_toe.core.$game_table);
+  window.addEventListener("popstate", tic_tac_toe.core.route.call(null));
   tic_tac_toe.core.$button.click(function(a) {
     return tic_tac_toe.core.select_turn.call(null, a)
   });
