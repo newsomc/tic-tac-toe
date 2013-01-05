@@ -20,4 +20,5 @@ Install
 Todo
 --
 * Highlight background cells along winning axis.
+* Resizable game table
 
