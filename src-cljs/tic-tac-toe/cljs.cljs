@@ -16,11 +16,17 @@
 (def $body ($ :body))
 
 ;; Vars
+;; TODO: pass in a map of options to our fncs. 
+;; use an atom to be clear that we are going to mutate. 
 (def turns (array))
 (def finished false)
 (def winner false)
 (def draw false)
 (def active-player false)
+
+;(def game-state (atom {}))
+;(swap! game-state conj :winner winner)
+;=> (reset! game-state (conj @game-state :winner winner))
 
 ;; App 
 (defn set-history 
@@ -45,22 +51,22 @@
 		(into rows 
 			(for [x (range 3) 
 			      y (range 3)] 
-			      [(+(str x)(str y)) (.find table (apply str (+ "[data-x=" x "][data-y=" y "]")))]))))
+			      [(str x y) (.find table (str "[data-x=" x "][data-y=" y "]"))]))))
+;; Rules
+(defn player-data 
+	""
+	[selector]
+	(.data ($ selector) "player"))
 
-;; Rules	
-(defn check-x 
-	"Check for matching moves on the x-axis."
-	[x player rows]
-	(and (== (.data ($ ((+ (str x) "0") rows)) "player") player)
-		 (== (.data ($ ((+ (str x) "1") rows)) "player") player) 
-		 (== (.data ($ ((+ (str x) "2") rows)) "player") player)))
+(defn check-axis-fn
+	[axis-fn]
+	(fn [axis player rows]
+		(every? identity (map #(== (player-data (((axis-fn axis %) rows) player)))
+			["0" "1" "2"]))))
 
-(defn check-y 
-	"Check for matching moves on the y-axis."
-	[y player rows]
-	(and (== (.data ($ ((+ "0" (str y)) rows)) "player") player)
-		 (== (.data ($ ((+ "1" (str y)) rows)) "player") player) 
-		 (== (.data ($ ((+ "2" (str y)) rows)) "player") player)))
+(def check-x (check-axis-fn #(str %1 %2 %3)))
+(def check-y (check-axis-fn #(str %1 %2 %3)))
+
 
 (defn check-all-diags 
 	"Check for matching moves along each diagonal."
@@ -82,15 +88,17 @@
 (defn game-over 
 	"Conditions for game end."
 	[x y player rows]
-	(or (check-y y player rows) 
-		(check-x x player rows) 
-		(check-diags x y player rows)))
+	(check-y y player rows)
+	;;(or (check-y y player rows) 
+		;(check-x x player rows) 
+		;(check-diags x y player rows))
+	)
 
 (defn set-winner 
 	"Conditions for winning game. Uses set! which is a bit gnarly I admit."
 	[player]
 	(set! winner player)
-	(set! finished true)
+	;;(set! finished true)
 	(.text $status-text (+ (str player) " Won"))
 	(.css $game-table "background" "#FAFAFA"))
 
@@ -117,7 +125,7 @@
 	[turns]
 	(if (and (>= (alength turns) 9) (= false winner))
 		(do
-			(set! finished true)
+			;(set! finished true)
 			(set! draw true)
 			(.text $status-text "Draw!")
 			(.css $game-table "background" "#FAFAFA"))))
@@ -141,7 +149,7 @@
 		  	(check-draw turns)))))
 
 (defn construct-path 
-	""
+	"Create the location path."
 	[]
 	(apply str(+ "/game/" (.join turns "-") "/" active-player)))
 
@@ -169,9 +177,10 @@
 		  row-key (+ (str y) (str y))
 		  rows (cache-board $game-table)]
 		  (if (== finished true) 
-		  	(js/alert "The game is over. Stop playing!")
-		  	(if-not (== (.html cell) empty-cell) 
-		  		(js/alert "Stop that. Someone else played there!")
+		  	;;(js/alert "The game is over. Stop playing!")
+		  	(if-not (== (not-empty (.data cell)) nil)
+		  	;(if-not (== (.html cell) empty-cell) 
+		  		;(js/alert "Stop that. Someone else played there!")
 		  		(do 
 		  			(.push turns (+ x "," y))		  
 		  			(change-turn)
