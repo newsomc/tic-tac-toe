@@ -1,13 +1,18 @@
 (ns tic-tac-toe.core
 	(:use [jayq.core :only [$ css inner find data text current-target on click html]]
-	 	  [jayq.util :only [log clj->js]])
-	(:require[goog.events :as events]))
+	 	  [jayq.util :only [log clj->js]]))
 
-;; Logging 
+;;------------------
+;; Logging
+;;------------------
+
 (defn console-log [my-var]
  (.log js/console (pr-str my-var)))
 
+;;------------------
 ;; DOM Elements
+;;------------------
+
 (def $turn-prompt ($ :#TurnPrompt))
 (def $status-text ($ :#StatusText))
 (def $game-table  ($ :#GameTable))
@@ -15,20 +20,20 @@
 (def $td ($ :td))
 (def $body ($ :body))
 
-;; Vars
-;; TODO: pass in a map of options to our fncs. 
-;; use an atom to be clear that we are going to mutate. 
+;;------------------
+;; Vars TODO: Use an atom to designate synchronously modified values. 
+;;------------------
+
 (def turns (array))
 (def finished false)
 (def winner false)
 (def draw false)
 (def active-player false)
 
-;(def game-state (atom {}))
-;(swap! game-state conj :winner winner)
-;=> (reset! game-state (conj @game-state :winner winner))
+;;------------------
+;; App
+;;------------------
 
-;; App 
 (defn set-history 
 	"We just take the existence of the history HTML5 api for granted here."
 	[url]
@@ -38,7 +43,7 @@
 	"Helper function. Better syntax for getting the clicked element."
 	[evt]
 	(.-currentTarget evt))
-;;
+
 (defn start-game 
 	"Shows x,y modal prompt at game start."
 	[]
@@ -52,32 +57,36 @@
 			(for [x (range 3) 
 			      y (range 3)] 
 			      [(str x y) (.find table (str "[data-x=" x "][data-y=" y "]"))]))))
+
+;; ----------------------
 ;; Rules
+;; ----------------------
+
 (defn player-data 
-	""
+  "Grab current player from html table"
 	[selector]
 	(.data ($ selector) "player"))
 
 (defn check-axis-fn
+  "Higher order function to check axis."
 	[axis-fn]
 	(fn [axis player rows]
-		(every? identity (map #(== (player-data (((axis-fn axis %) rows) player)))
-			["0" "1" "2"]))))
+		(every? identity (map #(== player (player-data ((axis-fn axis %) rows)))
+                          ["0" "1" "2"]))))
 
-(def check-x (check-axis-fn #(str %1 %2 %3)))
-(def check-y (check-axis-fn #(str %1 %2 %3)))
-
+(def check-row-x (check-axis-fn #(str %1 %2)))
+(def check-row-y (check-axis-fn #(str %2 %1)))
 
 (defn check-all-diags 
 	"Check for matching moves along each diagonal."
 	[player rows]
 	(or (and (== (.data ($ ("00" rows)) "player") player) 
-			 (== (.data ($ ("11" rows)) "player") player) 
-			 (== (.data ($ ("22" rows)) "player") player)) 
+           (== (.data ($ ("11" rows)) "player") player) 
+           (== (.data ($ ("22" rows)) "player") player)) 
 
 	    (and (== (.data ($ ("02" rows)) "player") player) 
-			 (== (.data ($ ("11" rows)) "player") player) 
-			 (== (.data ($ ("20" rows)) "player") player))))
+           (== (.data ($ ("11" rows)) "player") player) 
+           (== (.data ($ ("20" rows)) "player") player))))
 
 (defn check-diags 
 	"If the sum of x and y are odd, we're not on a diagonal."
@@ -88,17 +97,17 @@
 (defn game-over 
 	"Conditions for game end."
 	[x y player rows]
-	(check-y y player rows)
-	;;(or (check-y y player rows) 
-		;(check-x x player rows) 
-		;(check-diags x y player rows))
-	)
+	(or
+    (check-row-y y player rows) 
+		(check-row-x x player rows) 
+		(check-diags x y player rows)
+    ))
 
 (defn set-winner 
 	"Conditions for winning game. Uses set! which is a bit gnarly I admit."
 	[player]
 	(set! winner player)
-	;;(set! finished true)
+	(set! finished true)
 	(.text $status-text (+ (str player) " Won"))
 	(.css $game-table "background" "#FAFAFA"))
 
@@ -107,16 +116,15 @@
 	 Uses jQuery data API to store moves in rows map. Checks for wins."
 	[entering-player turns]
 	(let [turn-copy turns
-		  player (if (== entering-player "x") "o" "x")
-		  turn (.split (last turns) ",")
-		  x (apply str (get turn 0))
-		  y (apply str (get turn 1))
-		  row-key (+ (str x) (str y))
-		  rows (cache-board $game-table)
-		  winner ()]
-		  (.text ($ (row-key rows)) player)
+        player (if (== entering-player "x") "o" "x")
+        turn (.split (last turns) ",")
+        x (apply str (get turn 0))
+        y (apply str (get turn 1))
+        row-key (+ (str x) (str y))
+        rows (cache-board $game-table)
+        winner ()]
+      (.text ($ (row-key rows)) player)
 		  (.data ($ (row-key rows)) (clj->js {:player player}))
-		  (console-log (.data ($ (row-key rows)) "player"))
 		  (if (game-over x y player rows)
 		  	(set-winner player))))
 
@@ -125,10 +133,10 @@
 	[turns]
 	(if (and (>= (alength turns) 9) (= false winner))
 		(do
-			;(set! finished true)
+			;;(set! finished true)
 			(set! draw true)
 			(.text $status-text "Draw!")
-			(.css $game-table "background" "#FAFAFA"))))
+			(.css  $game-table "background" "#FAFAFA"))))
 
 (defn set-turn 
 	"Sets current turn."
@@ -168,24 +176,21 @@
 
 (defn take-turn 
 	"Create the current turn. Check if cells are occupied. 
-	TODO: change checking for td text to player data with jQuery."
+	 TODO: change checking for td text to player data with jQuery."
 	[e]
 	(let [cell ($ (curr-target e)) 
-		  x (.data cell "x")
-		  y (.data cell "y")
-		  empty-cell "&nbsp;"
-		  row-key (+ (str y) (str y))
-		  rows (cache-board $game-table)]
-		  (if (== finished true) 
-		  	;;(js/alert "The game is over. Stop playing!")
-		  	(if-not (== (not-empty (.data cell)) nil)
-		  	;(if-not (== (.html cell) empty-cell) 
-		  		;(js/alert "Stop that. Someone else played there!")
-		  		(do 
-		  			(.push turns (+ x "," y))		  
-		  			(change-turn)
-		  			(set-history (construct-path))
-		  			(route))))))
+        x (.data cell "x")
+        y (.data cell "y")
+        empty-cell "&nbsp;"
+        row-key (+ (str y) (str y))
+        rows (cache-board $game-table)]
+    (if-not (== (.data cell) nil )
+      (do
+           (console-log turns)
+           (.push turns (+ x "," y))		  
+           (change-turn)
+           (set-history (construct-path))
+           (route)))))
 
 (defn init 
 	"Initialize the app!"
