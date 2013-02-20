@@ -1,5 +1,5 @@
 (ns tic-tac-toe.core
-	(:use [jayq.core :only [$ css inner find data text current-target on click html]]
+	(:use [jayq.core :only [$ css inner find data text current-target on click html append]]
         [jayq.util :only [log clj->js]])
   (:require [clojure.string :as string]))
 
@@ -22,7 +22,8 @@
 (def $body ($ :body))
 
 (defn new-game-state
-  "Returns an atom with a map which holds the entire state of the game."
+  "Returns a map in an atom which holds the entire state of the game.
+   Using an atom explicitly says we want side effects for this peice of data."
   []
    (atom {:turns []
           :finished false
@@ -37,7 +38,8 @@
 ;;------------------
 
 (defn set-history 
-	"We just take the existence of the history HTML5 api for granted here."
+	"We just take the existence of the history HTML5 api for granted here.
+   A more rigorous implementation would check for its "
 	[url]
 	(.pushState (aget js/window "history") nil nil url))
 
@@ -47,12 +49,14 @@
 	(.-currentTarget evt))
 
 (defn start-game 
-	"Shows x,y modal prompt at game start."
+	"Displays x/o modal prompt at game start."
 	[]
 	(.modal $turn-prompt (clj->js {:show :true})))
 
 (defn make-board 
-	"Create a map representation of the current table state."
+	"Creates a map representation of the current table state.
+   Ostensibly helps us avoid traversing the DOM consisently for changes.
+   Returns a map of the form (row-column dom-object). ex. (00 <HTML object>)"
 	[table]
   (into {} 
     (for [x (range 3) 
@@ -60,8 +64,9 @@
       [(str x y) (.find table (str "[data-x=" x "][data-y=" y "]"))])))
 
 (defn update-game
-  "Updates the current game state. If we are adding to the turns update-in and
-   conj the value onto vector. If we are chaning a symbol variable lets assoc."
+  "Updates the current game state. If we are swaping the turns vector we use update-in then
+   conj the value onto our vector. If we are swaping, we assoc. 
+   More about swap! here: http://clojuredocs.org/clojure_core/clojure.core/swap!"
   [key value]
   (if (= key :turns) (swap! game-state update-in [:turns] conj value)
       (swap! game-state assoc-in [key] value)))
@@ -71,12 +76,12 @@
 ;; ----------------------
 
 (defn player-data 
-  "Grab current player from html table"
+  "Get current player from html table."
 	[selector]
 	(.data ($ selector) "player"))
 
 (defn check-axis
-  "Higher order function to check axis."
+  "Higher order function. Checks for matching moves by player along x and y axis."
 	[axis? axis player rows]
   (let [axis-fn (if (= axis? :x)
                   #(str %1 %2)
@@ -85,7 +90,7 @@
                           ["0" "1" "2"]))))
 
 (defn check-all-diags 
-	"Check for matching moves along each diagonal."
+	"Same as above. Checks for matching moves along each diagonal."
 	[player rows]
   (letfn [(check [row-key]
             (== player (player-data (row-key rows))))
@@ -113,7 +118,7 @@
 	[player]
   (update-game :winner player)
   (update-game :finished true)
-	(.text $status-text (+ (str player) " Won"))
+	(.text $status-text (+ (str player) " Won in " (@game-state :turn-count) " moves."))
 	(.css $game-table "background" "#FAFAFA"))
 
 (defn play 
@@ -167,7 +172,6 @@
 	(apply str(+ "/game/" (string/join "-" (@game-state :turns)) "/" (@game-state :active-player))))
 
 (defn change-turn []
-  ;;  (console-log (clj->js @game-state))
 	(if (== (@game-state :active-player) "x") (set-turn "o") (set-turn "x")))
 
 (defn select-turn 
