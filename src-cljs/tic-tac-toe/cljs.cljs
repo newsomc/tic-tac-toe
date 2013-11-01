@@ -1,4 +1,5 @@
 (ns tic-tac-toe.core
+  "This is a stateful and mutable Tic-Tac-Toe. Lots of refs here."
 	(:use [jayq.core :only [$ css inner find data text current-target on click html append]]
         [jayq.util :only [log clj->js]])
   (:require [clojure.string :as string]))
@@ -12,6 +13,8 @@
 
 ;;------------------
 ;; Vars 
+;; 
+;; jayq vars begin with $
 ;;------------------
 
 (def $turn-prompt ($ :#TurnPrompt))
@@ -55,7 +58,7 @@
 
 (defn make-board 
 	"Creates a map representation of the current table state.
-   Ostensibly helps us avoid traversing the DOM consisently for changes.
+   Should help us avoid traversing the DOM constantly for changes. Fingers crossed.
    Returns a map of the form (row-column dom-object). ex. (00 <HTML object>)"
 	[table]
   (into {} 
@@ -65,7 +68,7 @@
 
 (defn update-game
   "Updates the current game state. If we are swaping the turns vector we use update-in then
-   conj the value onto our vector. If we are swaping, we assoc. 
+   conj the value onto a vector. If we are swaping, we assoc. 
    More about swap! here: http://clojuredocs.org/clojure_core/clojure.core/swap!"
   [key value]
   (if (= key :turns) (swap! game-state update-in [:turns] conj value)
